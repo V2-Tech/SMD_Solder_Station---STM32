@@ -1,0 +1,4 @@
+MAX6675.c:16:6:Max6675_Read_Temp	8	static
+MAX6675.c:22:6:Max6675_Get_TempValue	8	static
+MAX6675.c:31:6:Max6675_Read_TempValue	16	static
+MAX6675.c:43:6:HAL_SPI_RxCpltCallback	8	static
