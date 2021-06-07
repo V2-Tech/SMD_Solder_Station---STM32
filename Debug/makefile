@@ -45,34 +45,34 @@ $(wildcard ../makefile.init) \
 $(wildcard ../makefile.targets) \
 
 
-BUILD_ARTIFACT_NAME := MapleMini Test
+BUILD_ARTIFACT_NAME := SMDSolderStation
 BUILD_ARTIFACT_EXTENSION := elf
 BUILD_ARTIFACT_PREFIX := 
 BUILD_ARTIFACT := $(BUILD_ARTIFACT_PREFIX)$(BUILD_ARTIFACT_NAME).$(BUILD_ARTIFACT_EXTENSION)
 
 # Add inputs and outputs from these tool invocations to the build variables 
 EXECUTABLES += \
-MapleMini\ Test.elf \
+SMDSolderStation.elf \
 
 SIZE_OUTPUT += \
 default.size.stdout \
 
 OBJDUMP_LIST += \
-MapleMini\ Test.list \
+SMDSolderStation.list \
 
 OBJCOPY_BIN += \
-MapleMini\ Test.bin \
+SMDSolderStation.bin \
 
 
 # All Target
 all: main-build
 
 # Main-build Target
-main-build: MapleMini\ Test.elf secondary-outputs
+main-build: SMDSolderStation.elf secondary-outputs
 
 # Tool invocations
-MapleMini\ Test.elf: $(OBJS) $(USER_OBJS) C:\Users\Valerio\ Mazzoni\Documents\Laboratory\Progetti\MapleMini\ Test\STM32F103C8TX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
-	arm-none-eabi-gcc -o "MapleMini Test.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m3 -T"C:\Users\Valerio Mazzoni\Documents\Laboratory\Progetti\MapleMini Test\STM32F103C8TX_FLASH.ld" --specs=nosys.specs -Wl,-Map="MapleMini Test.map" -Wl,--gc-sections -static -u _printf_float --specs=nano.specs -mfloat-abi=soft -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
+SMDSolderStation.elf: $(OBJS) $(USER_OBJS) C:\Users\Valerio.Mazzoni\git\SMD_Solder_Station---STM32\STM32F103C8TX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
+	arm-none-eabi-gcc -o "SMDSolderStation.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m3 -T"C:\Users\Valerio.Mazzoni\git\SMD_Solder_Station---STM32\STM32F103C8TX_FLASH.ld" --specs=nosys.specs -Wl,-Map="SMDSolderStation.map" -Wl,--gc-sections -static -u _printf_float --specs=nano.specs -mfloat-abi=soft -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
 	@echo 'Finished building target: $@'
 	@echo ' '
 
@@ -81,13 +81,13 @@ default.size.stdout: $(EXECUTABLES) makefile objects.list $(OPTIONAL_TOOL_DEPS)
 	@echo 'Finished building: $@'
 	@echo ' '
 
-MapleMini\ Test.list: $(EXECUTABLES) makefile objects.list $(OPTIONAL_TOOL_DEPS)
-	arm-none-eabi-objdump -h -S $(EXECUTABLES) > "MapleMini Test.list"
+SMDSolderStation.list: $(EXECUTABLES) makefile objects.list $(OPTIONAL_TOOL_DEPS)
+	arm-none-eabi-objdump -h -S $(EXECUTABLES) > "SMDSolderStation.list"
 	@echo 'Finished building: $@'
 	@echo ' '
 
-MapleMini\ Test.bin: $(EXECUTABLES) makefile objects.list $(OPTIONAL_TOOL_DEPS)
-	arm-none-eabi-objcopy  -O binary $(EXECUTABLES) "MapleMini Test.bin"
+SMDSolderStation.bin: $(EXECUTABLES) makefile objects.list $(OPTIONAL_TOOL_DEPS)
+	arm-none-eabi-objcopy  -O binary $(EXECUTABLES) "SMDSolderStation.bin"
 	@echo 'Finished building: $@'
 	@echo ' '
 
