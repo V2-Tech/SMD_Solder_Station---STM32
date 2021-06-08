@@ -43,3 +43,23 @@ void TestFPS() {
 
     osDelay(2000);
 }
+
+void EncoderRead(VisualInterface* Interface, TIM_HandleTypeDef* EncoderTimerHandler)
+{
+	uint32_t EncActValue = EncoderTimerHandler->Instance->CNT;
+	Interface->SignedEncActValue = (int16_t) EncActValue;
+}
+
+void MainPageDraw(VisualInterface* Interface)
+{
+	_Bool DrawAll = Interface->_ActualPage != PageMain;
+
+	if (DrawAll)
+	{
+		;
+	}
+	else
+	{
+		;
+	}
+}

@@ -1,1 +1,3 @@
 grafica.c:10:6:TestFPS	112	static
+grafica.c:47:6:EncoderRead	0	static
+grafica.c:53:6:MainPageDraw	0	static

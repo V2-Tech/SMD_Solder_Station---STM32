@@ -45,9 +45,6 @@
 extern uint8_t u8x8_byte_stm32_hw_i2c(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int, void *arg_ptr);
 extern uint8_t psoc_gpio_and_delay_cb(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int, void *arg_ptr);
 extern u8g2_t u8g2;
-LPFilter TempFilter;
-float FilteredTemperature;
-PID TempPID;
 
 /* USER CODE END PD */
 
@@ -85,16 +82,19 @@ const osThreadAttr_t GraphicTask_attributes = {
   .priority = (osPriority_t) osPriorityNormal,
 };
 /* USER CODE BEGIN PV */
-uint16_t EncActValue = 0;
 char ScreenString[5][50];
 uint8_t updateVisu;
-uint16_t tempEncCount = -1;
+int32_t tempEncCount = -1;
 GPIO_PinState tempEncPuls = -1;
 uint8_t tempHeigth = 0;
 float tempActTemperature = -1;
 int32_t CH1_DC = 0;
 uint8_t PWMRamp = 0;
 osTimerId_t osPIDTimer;
+LPFilter TempFilter;
+float FilteredTemperature;
+PID TempPID;
+VisualInterface GraphicVar;
 
 /* USER CODE END PV */
 
@@ -731,8 +731,7 @@ void StartGraphicTask(void *argument)
   for(;;)
   {
 	  /* Lettura valore encoder rotativo */
-	  EncActValue = TIM3->CNT;
-	  int32_t SignedEncActValue = (int16_t) EncActValue;
+	  EncoderRead(&GraphicVar, &htim3);
 
 	  /* Lettura ingresso pulsante encoder rotativo */
 	  GPIO_PinState EncPulsStatus = HAL_GPIO_ReadPin(ENC_PULS_GPIO_Port, ENC_PULS_Pin);
@@ -746,24 +745,24 @@ void StartGraphicTask(void *argument)
 	  }
 
 	  /* Finecorsa encoder rotativo */
-	  if (SignedEncActValue<0)
+	  if (GraphicVar.SignedEncActValue<0)
 	  {
 		  __HAL_TIM_SET_COUNTER(&htim3, 0);
 	  }
-	  if (SignedEncActValue>MAXTEMPERATURE)
+	  if (GraphicVar.SignedEncActValue>MAXTEMPERATURE)
 	  {
 		  __HAL_TIM_SET_COUNTER(&htim3, MAXTEMPERATURE);
 	  }
 
 	  /* Aggiornamento stringa valore encoder */
-	  if (tempEncCount != EncActValue)
+	  if (tempEncCount != GraphicVar.SignedEncActValue)
 	  {
-		  tempEncCount = EncActValue;
-		  if (SignedEncActValue>=0 && SignedEncActValue<=MAXTEMPERATURE)
+		  tempEncCount = GraphicVar.SignedEncActValue;
+		  if (GraphicVar.SignedEncActValue>=0 && GraphicVar.SignedEncActValue<=MAXTEMPERATURE)
 		  {
 			  updateVisu = 1;
 		  }
-		  sprintf(ScreenString[0], "Enc.Ticks= %d", EncActValue);
+		  sprintf(ScreenString[0], "Enc.Ticks= %d", GraphicVar.SignedEncActValue);
 	  }
 
 	  /* Aggiornamento stringa pulsante encoder */
@@ -825,7 +824,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
   /* USER CODE BEGIN Callback 0 */
 	if (htim->Instance == TIM4) {
-		HAL_GPIO_TogglePin(LED_GPIO_Port, LED_Pin);
+		//HAL_GPIO_TogglePin(LED_GPIO_Port, LED_Pin);
 		Max6675_Read_TempValue(&ActTemperature);
 		FilteredTemperature = LPFilterUpdate(&TempFilter, ActTemperature);
 	}
