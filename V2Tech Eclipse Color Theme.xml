@@ -16,31 +16,31 @@
     <javadocKeyword color="#D9E577" />
     <class color="#FF8080" />
     <interface color="#D197D9" />
-    <method color="#D0D0D0" />
-    <methodDeclaration color="#BED6FF" />
+    <method color="#FFD680" />
+    <methodDeclaration color="#BED6FF" bold="true" />
     <bracket color="#D0D0D0" />
     <number color="#FFFF00" />
     <string color="#DC78DC" />
-    <operator color="#D0D0D0" />
+    <operator color="#00D0D0" />
     <keyword color="#00D0D0" />
-    <annotation color="#FFFFFF" />
-    <staticMethod color="#BED6FF" />
-    <localVariable color="#79ABFF" />
-    <localVariableDeclaration color="#BED6FF" />
+    <annotation color="#FFFFFF" italic="true"/>
+    <staticMethod color="#BED6FF" bold="true"/>
+    <localVariable color="#C0C0C0" />
+    <localVariableDeclaration color="#C0C0C0" />
     <field color="#BED6FF" />
-    <staticField color="#EFC090" />
-    <staticFinalField color="#EFC090" />
-    <deprecatedMember color="#FFFFFF" />
-    <enum color="#FFFFFF" />
+    <staticField color="#FF00DC" italic="true"/>
+    <staticFinalField color="#FF00DC" italic="true"/>
+    <deprecatedMember color="#FFFFFF" underline="false" strikethrough="true"/>
+    <enum color="#FFFFFF" italic="true"/>
     <inheritedMethod color="#BED6FF" />
     <abstractMethod color="#BED6FF" />
     <parameterVariable color="#79ABFF" />
-    <typeArgument color="#BFA4A4" />
-    <typeParameter color="#BFA4A4" />
+    <typeArgument color="#FFFF00" />
+    <typeParameter color="#FFFF00" />
     <constant color="#FFFF00" />
     <background color="#101020" />
     <currentLine color="#202030" />
-    <foreground color="#A0A0A0" />
+    <foreground color="#C0C0C0" />
     <lineNumber color="#2B91AF" />
     <selectionBackground color="#0000FF" />
     <selectionForeground color="#FFFFFF" />
