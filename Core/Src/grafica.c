@@ -7,6 +7,7 @@
 #include "u8g2/u8g2.h"
 u8g2_t u8g2;
 
+/*
 void TestFPS() {
     u8g2_DrawBox(&u8g2, 0, 0, 128, 64);
     u8g2_SendBuffer(&u8g2);
@@ -43,6 +44,7 @@ void TestFPS() {
 
     osDelay(2000);
 }
+*/
 
 void EncoderRead(VisualInterface* Interface, TIM_HandleTypeDef* EncoderTimerHandler)
 {
