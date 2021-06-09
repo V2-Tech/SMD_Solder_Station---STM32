@@ -50,16 +50,26 @@ void EncoderRead(VisualInterface* Interface, TIM_HandleTypeDef* EncoderTimerHand
 	Interface->SignedEncActValue = (int16_t) EncActValue;
 }
 
-void MainPageDraw(VisualInterface* Interface)
+void MainPage(VisualInterface* Interface)
 {
-	_Bool DrawAll = Interface->_ActualPage != PageMain;
+	_Bool FirstDraw = Interface->_ActualPage != PageMain;
 
-	if (DrawAll)
+	/* Memory variables */
+	static uint8_t tempHeatMode;
+	static uint8_t tempHeatStatus;
+
+	if (FirstDraw)
 	{
+		/* Draw target temperature icon */
+		/* Draw actual temperature icon */
+		/* Draw alarm icon */
+		/* Draw heat icon */
 		;
 	}
 	else
 	{
 		;
 	}
+
+	Interface->_ActualPage = PageMain;
 }
