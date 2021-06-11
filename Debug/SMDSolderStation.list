@@ -35,11 +35,11 @@ Idx Name          Size      VMA       LMA       File off  Algn
                   CONTENTS, READONLY, DEBUGGING, OCTETS
  15 .debug_macro  00020fb8  00000000  00000000  000e2c58  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 16 .debug_line   000411df  00000000  00000000  00103c10  2**0
+ 16 .debug_line   000411e1  00000000  00000000  00103c10  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 17 .debug_str    000af9d7  00000000  00000000  00144def  2**0
+ 17 .debug_str    000af9d7  00000000  00000000  00144df1  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 18 .comment      00000053  00000000  00000000  001f47c6  2**0
+ 18 .comment      00000053  00000000  00000000  001f47c8  2**0
                   CONTENTS, READONLY
  19 .debug_ranges 00004a78  00000000  00000000  001f4820  2**3
                   CONTENTS, READONLY, DEBUGGING, OCTETS
@@ -1500,12 +1500,12 @@ void MainPage(VisualInterface* Interface)
  80010c4:	f000 ffaf 	bl	8002026 <u8g2_DrawXBMP>
 
 	/* Draw actual temperature icon */
-	u8g2_DrawXBMP(&u8g2, 120, 20, 23, 39, temperature_23x39);
+	u8g2_DrawXBMP(&u8g2, 100, 20, 23, 39, temperature_23x39);
  80010c8:	4b15      	ldr	r3, [pc, #84]	; (8001120 <MainPage+0x70>)
  80010ca:	2214      	movs	r2, #20
  80010cc:	9301      	str	r3, [sp, #4]
  80010ce:	2327      	movs	r3, #39	; 0x27
- 80010d0:	2178      	movs	r1, #120	; 0x78
+ 80010d0:	2164      	movs	r1, #100	; 0x64
  80010d2:	4812      	ldr	r0, [pc, #72]	; (800111c <MainPage+0x6c>)
  80010d4:	9300      	str	r3, [sp, #0]
  80010d6:	2317      	movs	r3, #23
@@ -1514,11 +1514,11 @@ void MainPage(VisualInterface* Interface)
 	/* Draw alarm icon */
 	if (Interface->AlarmState || 1)
 	{
-		u8g2_DrawXBMP(&u8g2, 2, 112, 14, 14, alarm_icon14x14);
+		u8g2_DrawXBMP(&u8g2, 112, 0, 14, 14, alarm_icon14x14);
  80010dc:	4b11      	ldr	r3, [pc, #68]	; (8001124 <MainPage+0x74>)
- 80010de:	2270      	movs	r2, #112	; 0x70
+ 80010de:	2200      	movs	r2, #0
  80010e0:	e9cd 5300 	strd	r5, r3, [sp]
- 80010e4:	2102      	movs	r1, #2
+ 80010e4:	2170      	movs	r1, #112	; 0x70
  80010e6:	462b      	mov	r3, r5
  80010e8:	480c      	ldr	r0, [pc, #48]	; (800111c <MainPage+0x6c>)
  80010ea:	f000 ff9c 	bl	8002026 <u8g2_DrawXBMP>
@@ -1545,10 +1545,11 @@ void MainPage(VisualInterface* Interface)
  8001106:	4805      	ldr	r0, [pc, #20]	; (800111c <MainPage+0x6c>)
  8001108:	231e      	movs	r3, #30
  800110a:	f000 ff8c 	bl	8002026 <u8g2_DrawXBMP>
-	}
-
-	/* Update value */
-
+	/*
+	u8g2_SetFont(&u8g2, u8g2_font_ncenB10_tr);
+	uint8_t tempHeigth = u8g2_GetFontBBXHeight(&u8g2);
+	u8g2_DrawStr(&u8g2, 1, tempHeigth, ScreenString[0]);
+	*/
 	Interface->_ActualPage = PageMain;
  800110e:	2300      	movs	r3, #0
  8001110:	7123      	strb	r3, [r4, #4]

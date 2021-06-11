@@ -94,9 +94,10 @@ void MainPage(VisualInterface* Interface)
 	}
 
 	/* Update value */
+	/*
 	u8g2_SetFont(&u8g2, u8g2_font_ncenB10_tr);
-	tempHeigth = u8g2_GetFontBBXHeight(&u8g2);
+	uint8_t tempHeigth = u8g2_GetFontBBXHeight(&u8g2);
 	u8g2_DrawStr(&u8g2, 1, tempHeigth, ScreenString[0]);
-
+	*/
 	Interface->_ActualPage = PageMain;
 }
