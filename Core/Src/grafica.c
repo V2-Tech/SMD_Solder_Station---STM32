@@ -5,8 +5,10 @@
 
 #include "grafica.h"
 #include "u8g2/u8g2.h"
+
 u8g2_t u8g2;
 _Bool BlinkVar = 0;
+_Bool AlarmVar = 0;
 
 /*
 void TestFPS() {
@@ -58,13 +60,13 @@ void BlinkTimerCallback(void const * argument)
 	BlinkVar = !BlinkVar;
 }
 
-void Graphic(VisualInterface* Interface)
+void Graphic(VisualInterface* Interface, LPFilter *filter)
 {
 	u8g2_ClearBuffer(&u8g2);
 	switch(Interface->_ActualPage)
 	{
 		case PageMain:
-			MainPage(Interface);
+			MainPage(Interface, filter);
 			break;
 		case PageOptions:
 			break;
@@ -72,32 +74,43 @@ void Graphic(VisualInterface* Interface)
 	u8g2_SendBuffer(&u8g2);
 }
 
-void MainPage(VisualInterface* Interface)
+void MainPage(VisualInterface* Interface, LPFilter *filter)
 {
-	/* Draw target temperature icon */
+	char ScreenString[2][8];
+
+	//*********************************
+	//************* ICONS *************
+	//*********************************
+
+	// Draw target temperature icon
 	u8g2_DrawXBMP(&u8g2, 2, 0, 22, 14, temperature_target_22x14);
 
-	/* Draw actual temperature icon */
-	u8g2_DrawXBMP(&u8g2, 100, 20, 23, 39, temperature_23x39);
+	// Draw actual temperature icon
+	u8g2_DrawXBMP(&u8g2, 1, 20, 23, 39, temperature_23x39);
 
-	/* Draw alarm icon */
-	if (Interface->AlarmState || 1)
+	// Draw alarm icon
+	if (AlarmVar)
 	{
-		u8g2_DrawXBMP(&u8g2, 112, 0, 14, 14, alarm_icon14x14);
+		u8g2_DrawXBMP(&u8g2, 110, 0, 14, 14, alarm_14x14);
 	}
 
-	/* Draw heat icon */
+	// Draw heat icon
 	if ((Interface->_ActualHeatState == HeatStatyState) ||
-			((Interface->_ActualHeatState == Heating || 1 ) && (BlinkVar == 1)))
+			((Interface->_ActualHeatState == Heating || 1) && (BlinkVar == 1)))
 	{
-		u8g2_DrawXBMP(&u8g2, 2, 26, 30, 28, Heater_30x28);
+		u8g2_DrawXBMP(&u8g2, 96, 26, 30, 28, Heater_30x28);
 	}
 
-	/* Update value */
-	/*
-	u8g2_SetFont(&u8g2, u8g2_font_ncenB10_tr);
-	uint8_t tempHeigth = u8g2_GetFontBBXHeight(&u8g2);
-	u8g2_DrawStr(&u8g2, 1, tempHeigth, ScreenString[0]);
-	*/
+	//*********************************
+	//************ VALUES *************
+	//*********************************
+
+	// Actual temperature value
+	u8g2_SetFont(&u8g2, u8g2_font_helvR18_tf);
+	sprintf((uint8_t *)ScreenString[0], "%3.0f C",filter->FilteredValue);
+	u8g2_DrawStr(&u8g2, 32, 24, ScreenString[0]);
+
+	// Setpoint value
+
 	Interface->_ActualPage = PageMain;
 }

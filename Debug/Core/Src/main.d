@@ -57,7 +57,8 @@ Core/Src/main.o: ../Core/Src/main.c ../Core/Inc/main.h \
  ../Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_ctlreq.h \
  ../Drivers/MAX6675/MAX6675.h ../Core/Src/u8g2/u8g2.h \
  ../Core/Src/u8g2/u8x8.h ../Core/Inc/grafica.h ../Core/Inc/main.h \
- ../Core/Inc/V2Tech_128x64_iconset.h ../Core/Inc/stm32_pid.h
+ ../Core/Inc/V2Tech_128x64_iconset.h ../Core/Inc/stm32_pid.h \
+ ../Core/Inc/stm32_pid.h
 
 ../Core/Inc/main.h:
 
@@ -186,5 +187,7 @@ Core/Src/main.o: ../Core/Src/main.c ../Core/Inc/main.h \
 ../Core/Inc/main.h:
 
 ../Core/Inc/V2Tech_128x64_iconset.h:
+
+../Core/Inc/stm32_pid.h:
 
 ../Core/Inc/stm32_pid.h:

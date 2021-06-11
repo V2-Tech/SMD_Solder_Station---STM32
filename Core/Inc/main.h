@@ -73,6 +73,8 @@ void Error_Handler(void);
 #define ENC_PULS_Pin GPIO_PIN_7
 #define ENC_PULS_GPIO_Port GPIOB
 /* USER CODE BEGIN Private defines */
+extern _Bool BlinkVar;
+extern _Bool AlarmVar;
 extern SPI_HandleTypeDef hspi1;
 extern SPI_HandleTypeDef hspi2;
 

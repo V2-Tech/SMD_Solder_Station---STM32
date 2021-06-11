@@ -11,7 +11,7 @@ _Bool TCF=0;                                          // Thermocouple Connection
 uint8_t DATARX[2];                                    // Raw Data from MAX6675
 
 float ActTemperature;
-_Bool AlarmVar = 0;
+
 
 // ------------------- Functions ----------------
 void Max6675_Read_Temp(void)

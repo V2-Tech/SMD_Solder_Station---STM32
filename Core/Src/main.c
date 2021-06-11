@@ -45,8 +45,6 @@
 extern uint8_t u8x8_byte_stm32_hw_i2c(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int, void *arg_ptr);
 extern uint8_t psoc_gpio_and_delay_cb(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int, void *arg_ptr);
 extern u8g2_t u8g2;
-extern _Bool BlinkVar;
-extern _Bool AlarmVar;
 
 /* USER CODE END PD */
 
@@ -75,7 +73,6 @@ osThreadId PIDTaskHandle;
 osTimerId ReadTempTimerHandle;
 osTimerId BlinkTimerHandle;
 /* USER CODE BEGIN PV */
-char ScreenString[5][50];
 uint8_t updateVisu;
 int32_t tempEncCount = -1;
 uint8_t tempHeigth = 0;
@@ -164,7 +161,8 @@ int main(void)
   u8g2_InitDisplay(&u8g2);
   u8g2_SetPowerSave(&u8g2, 0);
   u8g2_ClearDisplay(&u8g2);
-  u8g2_SetFont(&u8g2, u8g2_font_ncenB10_tr);
+  u8g2_SetFont(&u8g2, u8g2_font_helvR18_tf);
+  u8g2_SetFontPosTop(&u8g2);
 
   LPFilterInit(&TempFilter);
   PIDInit(&TempPID, TEMPERATURE_SAMPLE_TIME, MAXPWMOUTPUT, 0, 200, 60, 100, MAXPWMOUTPUT/2, -(MAXPWMOUTPUT/2), DERIVATIVE_TIME_CONSTANT);
@@ -745,7 +743,7 @@ void StartGraphicTask(void const * argument)
 	  }
 	  u8g2_SendBuffer(&u8g2);
 	  */
-	  Graphic(&GraphicVar);
+	  Graphic(&GraphicVar, &TempFilter);
 	  osDelay(20);
   }
   /* USER CODE END StartGraphicTask */

@@ -12,6 +12,8 @@
 #include "stm32f1xx_hal.h"
 #include "stdbool.h"
 #include "V2Tech_128x64_iconset.h"
+#include "stm32_pid.h"
+#include "string.h"
 
 /* Define to prevent recursive inclusion -------------------------------------*/
 #ifndef __GRAFICA_H
@@ -19,6 +21,7 @@
 
 // ------------------------- Defines -------------------------
 #define LINESPACE 2
+
 #define BLINK_DELAY_MS 250
 
 typedef enum {
@@ -43,7 +46,6 @@ typedef struct
 {
 	//Public
 	int16_t SignedEncActValue;
-	_Bool AlarmState;
 
 	//Private
 	OledPage _FirstPage;
@@ -57,9 +59,9 @@ void TestFPS();
 
 void EncoderRead(VisualInterface* Interface, TIM_HandleTypeDef* EncoderTimer);
 
-void Graphic(VisualInterface* Interface);
+void Graphic(VisualInterface* Interface, LPFilter *filter);
 void GraphicInit(VisualInterface* Interface);
-void MainPage(VisualInterface* Interface);
+void MainPage(VisualInterface* Interface, LPFilter *filter);
 
 void BlinkTimerCallback(void const * argument);
 

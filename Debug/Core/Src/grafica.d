@@ -29,8 +29,8 @@ Core/Src/grafica.o: ../Core/Src/grafica.c ../Core/Inc/grafica.h \
  ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pcd.h \
  ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_ll_usb.h \
  ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pcd_ex.h \
- ../Core/Inc/V2Tech_128x64_iconset.h ../Core/Src/u8g2/u8g2.h \
- ../Core/Src/u8g2/u8x8.h
+ ../Core/Inc/V2Tech_128x64_iconset.h ../Core/Inc/stm32_pid.h \
+ ../Core/Src/u8g2/u8g2.h ../Core/Src/u8g2/u8x8.h
 
 ../Core/Inc/grafica.h:
 
@@ -97,6 +97,8 @@ Core/Src/grafica.o: ../Core/Src/grafica.c ../Core/Inc/grafica.h \
 ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pcd_ex.h:
 
 ../Core/Inc/V2Tech_128x64_iconset.h:
+
+../Core/Inc/stm32_pid.h:
 
 ../Core/Src/u8g2/u8g2.h:
 
