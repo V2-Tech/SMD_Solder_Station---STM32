@@ -19,12 +19,25 @@
 
 // ------------------------- Defines -------------------------
 #define LINESPACE 2
+#define BLINK_DELAY_MS 250
 
-// ------------------------- Variable ------------------------
 typedef enum {
 	PageMain = 0,
-	PageOptions= 1,
+	PageOptions = 1
 } OledPage;
+
+typedef enum {
+	MenuTempDes = 0,
+	MenuMode = 1
+} MenuSelection;
+
+typedef enum {
+	HeatOFF = 0,
+	Heating = 1,
+	HeatStatyState = 2
+} HeatState;
+
+// ------------------------- Variable ------------------------
 
 typedef struct
 {
@@ -36,7 +49,7 @@ typedef struct
 	OledPage _FirstPage;
 	OledPage _ActualPage;
 	int8_t _ActualHeatMode;//0=Manual, 1=Automatic
-	uint8_t _ActualHeatState;//0=OFF, 1=Heating, 2=Steady-State
+	HeatState _ActualHeatState;//0=OFF, 1=Heating, 2=Steady-State
 } VisualInterface;
 
 // ------------------------- Functions  ----------------------
@@ -44,7 +57,10 @@ void TestFPS();
 
 void EncoderRead(VisualInterface* Interface, TIM_HandleTypeDef* EncoderTimer);
 
+void Graphic(VisualInterface* Interface);
 void GraphicInit(VisualInterface* Interface);
 void MainPage(VisualInterface* Interface);
+
+void BlinkTimerCallback(void const * argument);
 
 #endif

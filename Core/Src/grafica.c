@@ -6,6 +6,7 @@
 #include "grafica.h"
 #include "u8g2/u8g2.h"
 u8g2_t u8g2;
+_Bool BlinkVar = 0;
 
 /*
 void TestFPS() {
@@ -52,26 +53,50 @@ void EncoderRead(VisualInterface* Interface, TIM_HandleTypeDef* EncoderTimerHand
 	Interface->SignedEncActValue = (int16_t) EncActValue;
 }
 
+void BlinkTimerCallback(void const * argument)
+{
+	BlinkVar = !BlinkVar;
+}
+
+void Graphic(VisualInterface* Interface)
+{
+	u8g2_ClearBuffer(&u8g2);
+	switch(Interface->_ActualPage)
+	{
+		case PageMain:
+			MainPage(Interface);
+			break;
+		case PageOptions:
+			break;
+	}
+	u8g2_SendBuffer(&u8g2);
+}
+
 void MainPage(VisualInterface* Interface)
 {
-	_Bool FirstDraw = Interface->_ActualPage != PageMain;
+	/* Draw target temperature icon */
+	u8g2_DrawXBMP(&u8g2, 2, 0, 22, 14, temperature_target_22x14);
 
-	/* Memory variables */
-	static uint8_t tempHeatMode;
-	static uint8_t tempHeatStatus;
+	/* Draw actual temperature icon */
+	u8g2_DrawXBMP(&u8g2, 100, 20, 23, 39, temperature_23x39);
 
-	if (FirstDraw)
+	/* Draw alarm icon */
+	if (Interface->AlarmState || 1)
 	{
-		/* Draw target temperature icon */
-		/* Draw actual temperature icon */
-		/* Draw alarm icon */
-		/* Draw heat icon */
-		;
+		u8g2_DrawXBMP(&u8g2, 112, 0, 14, 14, alarm_icon14x14);
 	}
-	else
+
+	/* Draw heat icon */
+	if ((Interface->_ActualHeatState == HeatStatyState) ||
+			((Interface->_ActualHeatState == Heating || 1 ) && (BlinkVar == 1)))
 	{
-		;
+		u8g2_DrawXBMP(&u8g2, 2, 26, 30, 28, Heater_30x28);
 	}
+
+	/* Update value */
+	u8g2_SetFont(&u8g2, u8g2_font_ncenB10_tr);
+	tempHeigth = u8g2_GetFontBBXHeight(&u8g2);
+	u8g2_DrawStr(&u8g2, 1, tempHeigth, ScreenString[0]);
 
 	Interface->_ActualPage = PageMain;
 }

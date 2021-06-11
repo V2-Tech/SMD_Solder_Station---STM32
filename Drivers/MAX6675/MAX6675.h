@@ -9,12 +9,13 @@
 #include "main.h"
 
 // ------------------------- Defines -------------------------
+#define MAX6675_READ_DELAY_MS 250
 
 // ------------------------- Variable -------------------------
 extern float ActTemperature;
 extern _Bool TCF;
 // ------------------------- Functions  ----------------------
 void Max6675_Read_Temp(void);
-void Max6675_Read_TempValue(float *tempartureVariable);
+int8_t Max6675_Read_TempValue(float *tempartureVariable);
 void Max6675_Get_TempValue(float* tempartureVariable);
 #endif

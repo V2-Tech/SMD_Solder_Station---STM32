@@ -11,6 +11,7 @@
 
 // ------------------------- Defines -------------------------
 #define FILTER_LENGTH 4
+#define PID_LOOP_FREQUENCY_HZ 2
 
 #define TEMPERATURE_SAMPLE_TIME 0.25
 #define MAXTEMPERATURE 240

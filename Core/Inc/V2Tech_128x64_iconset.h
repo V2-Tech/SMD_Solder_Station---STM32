@@ -11,6 +11,7 @@ const unsigned char alarm_icon14x14[];
 const unsigned char temperature_target_22x14[];
 
 /* General Icons */
-const unsigned char Heater_42x36[];
+const unsigned char Heater_30x28[];
+const unsigned char temperature_23x39[];
 
 #endif

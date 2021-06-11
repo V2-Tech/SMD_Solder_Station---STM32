@@ -11,6 +11,7 @@ _Bool TCF=0;                                          // Thermocouple Connection
 uint8_t DATARX[2];                                    // Raw Data from MAX6675
 
 float ActTemperature;
+_Bool AlarmVar = 0;
 
 // ------------------- Functions ----------------
 void Max6675_Read_Temp(void)
@@ -28,7 +29,7 @@ void Max6675_Get_TempValue(float* tempartureVariable)
 	*tempartureVariable = Temp;
 }
 
-void Max6675_Read_TempValue(float* tempartureVariable)
+int8_t Max6675_Read_TempValue(float* tempartureVariable)
 {
 	float Temp=0;                                  // Temperature Variable
 	HAL_GPIO_WritePin(MAX6675_NSS_GPIO_Port,MAX6675_NSS_Pin,GPIO_PIN_RESET);       // Low State for SPI Communication
@@ -38,6 +39,7 @@ void Max6675_Read_TempValue(float* tempartureVariable)
 	Temp=((((DATARX[0]|DATARX[1]<<8)))>>3);               // Temperature Data Extraction
 	Temp*=0.25;                                           // Data to Centigrade Conversation
 	*tempartureVariable = Temp;
+	AlarmVar = TCF;
 }
 
 void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef * hspi)

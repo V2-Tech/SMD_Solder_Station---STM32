@@ -1,5 +1,5 @@
 stm32_pid.c:11:6:LPFilterInit	0	static
-stm32_pid.c:26:7:LPFilterUpdate	16	static
+stm32_pid.c:26:7:LPFilterUpdate	24	static
 stm32_pid.c:64:6:PIDInit	0	static
 stm32_pid.c:89:6:PIDNewSetpoint	0	static
 stm32_pid.c:94:6:PIDNewCoeff	0	static

@@ -1,3 +1,4 @@
-grafica.c:10:6:TestFPS	112	static
-grafica.c:47:6:EncoderRead	0	static
-grafica.c:53:6:MainPage	0	static
+grafica.c:50:6:EncoderRead	0	static
+grafica.c:56:6:BlinkTimerCallback	0	static
+grafica.c:75:6:MainPage	24	static
+grafica.c:61:6:Graphic	8	static

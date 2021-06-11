@@ -45,6 +45,8 @@
 extern uint8_t u8x8_byte_stm32_hw_i2c(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int, void *arg_ptr);
 extern uint8_t psoc_gpio_and_delay_cb(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int, void *arg_ptr);
 extern u8g2_t u8g2;
+extern _Bool BlinkVar;
+extern _Bool AlarmVar;
 
 /* USER CODE END PD */
 
@@ -67,35 +69,22 @@ TIM_HandleTypeDef htim4;
 
 UART_HandleTypeDef huart2;
 
-/* Definitions for MainTask */
-osThreadId_t MainTaskHandle;
-const osThreadAttr_t MainTask_attributes = {
-  .name = "MainTask",
-  .stack_size = 128 * 4,
-  .priority = (osPriority_t) osPriorityHigh,
-};
-/* Definitions for GraphicTask */
-osThreadId_t GraphicTaskHandle;
-const osThreadAttr_t GraphicTask_attributes = {
-  .name = "GraphicTask",
-  .stack_size = 256 * 4,
-  .priority = (osPriority_t) osPriorityNormal,
-};
+osThreadId MainTaskHandle;
+osThreadId GraphicTaskHandle;
+osThreadId PIDTaskHandle;
+osTimerId ReadTempTimerHandle;
+osTimerId BlinkTimerHandle;
 /* USER CODE BEGIN PV */
 char ScreenString[5][50];
 uint8_t updateVisu;
 int32_t tempEncCount = -1;
-GPIO_PinState tempEncPuls = -1;
 uint8_t tempHeigth = 0;
 float tempActTemperature = -1;
-int32_t CH1_DC = 0;
-uint8_t PWMRamp = 0;
-osTimerId_t osPIDTimer;
 LPFilter TempFilter;
 float FilteredTemperature;
 PID TempPID;
 VisualInterface GraphicVar;
-
+char logBuf[128];
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -110,9 +99,11 @@ static void MX_I2C2_Init(void);
 static void MX_TIM3_Init(void);
 static void MX_SPI2_Init(void);
 static void MX_TIM4_Init(void);
-void StartMainTask(void *argument);
-void StartGraphicTask(void *argument);
-static void PIDTimerCallback();
+void StartMainTask(void const * argument);
+void StartGraphicTask(void const * argument);
+void StartPID(void const * argument);
+void ReadTempTimerCallback(void const * argument);
+extern void BlinkTimerCallback(void const * argument);
 
 /* USER CODE BEGIN PFP */
 
@@ -174,23 +165,12 @@ int main(void)
   u8g2_SetPowerSave(&u8g2, 0);
   u8g2_ClearDisplay(&u8g2);
   u8g2_SetFont(&u8g2, u8g2_font_ncenB10_tr);
-  /*
-  osTimerDef(PIDTimer, PIDTimerCallback);
-  osPIDTimer = osTimerCreate(osTimer(PIDTimer), osTimerPeriodic, NULL);
-  if (osPIDTimer==NULL) {
-    for(;;);
-  }
-  osTimerStart(osPIDTimer, pdMS_TO_TICKS(500));
-	*/
 
   LPFilterInit(&TempFilter);
   PIDInit(&TempPID, TEMPERATURE_SAMPLE_TIME, MAXPWMOUTPUT, 0, 200, 60, 100, MAXPWMOUTPUT/2, -(MAXPWMOUTPUT/2), DERIVATIVE_TIME_CONSTANT);
   PIDNewSetpoint(&TempPID, 120);
 
   /* USER CODE END 2 */
-
-  /* Init scheduler */
-  osKernelInitialize();
 
   /* USER CODE BEGIN RTOS_MUTEX */
   /* add mutexes, ... */
@@ -200,8 +180,20 @@ int main(void)
   /* add semaphores, ... */
   /* USER CODE END RTOS_SEMAPHORES */
 
+  /* Create the timer(s) */
+  /* definition and creation of ReadTempTimer */
+  osTimerDef(ReadTempTimer, ReadTempTimerCallback);
+  ReadTempTimerHandle = osTimerCreate(osTimer(ReadTempTimer), osTimerPeriodic, NULL);
+
+  /* definition and creation of BlinkTimer */
+  osTimerDef(BlinkTimer, BlinkTimerCallback);
+  BlinkTimerHandle = osTimerCreate(osTimer(BlinkTimer), osTimerPeriodic, NULL);
+
   /* USER CODE BEGIN RTOS_TIMERS */
   /* start timers, add new ones, ... */
+  osTimerStart(ReadTempTimerHandle, MAX6675_READ_DELAY_MS/portTICK_PERIOD_MS);
+  osTimerStart(BlinkTimerHandle, BLINK_DELAY_MS/portTICK_PERIOD_MS);
+
   /* USER CODE END RTOS_TIMERS */
 
   /* USER CODE BEGIN RTOS_QUEUES */
@@ -209,19 +201,21 @@ int main(void)
   /* USER CODE END RTOS_QUEUES */
 
   /* Create the thread(s) */
-  /* creation of MainTask */
-  MainTaskHandle = osThreadNew(StartMainTask, NULL, &MainTask_attributes);
+  /* definition and creation of MainTask */
+  osThreadDef(MainTask, StartMainTask, osPriorityNormal, 0, 256);
+  MainTaskHandle = osThreadCreate(osThread(MainTask), NULL);
 
-  /* creation of GraphicTask */
-  GraphicTaskHandle = osThreadNew(StartGraphicTask, NULL, &GraphicTask_attributes);
+  /* definition and creation of GraphicTask */
+  osThreadDef(GraphicTask, StartGraphicTask, osPriorityLow, 0, 256);
+  GraphicTaskHandle = osThreadCreate(osThread(GraphicTask), NULL);
+
+  /* definition and creation of PIDTask */
+  osThreadDef(PIDTask, StartPID, osPriorityNormal, 0, 128);
+  PIDTaskHandle = osThreadCreate(osThread(PIDTask), NULL);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
   /* USER CODE END RTOS_THREADS */
-
-  /* USER CODE BEGIN RTOS_EVENTS */
-  /* add events, ... */
-  /* USER CODE END RTOS_EVENTS */
 
   /* Start scheduler */
   osKernelStart();
@@ -682,7 +676,7 @@ static void MX_GPIO_Init(void)
   * @retval None
   */
 /* USER CODE END Header_StartMainTask */
-void StartMainTask(void *argument)
+void StartMainTask(void const * argument)
 {
   /* init code for USB_DEVICE */
   MX_USB_DEVICE_Init();
@@ -690,28 +684,7 @@ void StartMainTask(void *argument)
   /* Infinite loop */
   for(;;)
   {
-	  /*
-	  if (CH1_DC < MAXPWMOUTPUT && PWMRamp==0)
-	  {
-	      TIM2->CCR2 = CH1_DC;
-	      CH1_DC += 1;
-	  }
-	  if (CH1_DC>=MAXPWMOUTPUT && PWMRamp==0)
-	  {
-		  PWMRamp = 1;
-	  }
-	  if (CH1_DC > 0 && PWMRamp==1)
-	  {
-	      TIM2->CCR2 = CH1_DC;
-	      CH1_DC -= 1;
-	  }
-	  if (CH1_DC<=0 && PWMRamp==1)
-	  {
-		  PWMRamp = 0;
-	  }
-	  */
-	  TIM2->CCR2 = PIDUpdate(&TempPID, FilteredTemperature);
-	  osDelay(500);
+	  osDelay(1);
   }
   /* USER CODE END 5 */
 }
@@ -723,28 +696,17 @@ void StartMainTask(void *argument)
 * @retval None
 */
 /* USER CODE END Header_StartGraphicTask */
-void StartGraphicTask(void *argument)
+void StartGraphicTask(void const * argument)
 {
   /* USER CODE BEGIN StartGraphicTask */
-	char logBuf[128];
   /* Infinite loop */
   for(;;)
   {
-	  /* Lettura valore encoder rotativo */
+	  /*
+	  // Lettura valore encoder rotativo
 	  EncoderRead(&GraphicVar, &htim3);
 
-	  /* Lettura ingresso pulsante encoder rotativo */
-	  GPIO_PinState EncPulsStatus = HAL_GPIO_ReadPin(ENC_PULS_GPIO_Port, ENC_PULS_Pin);
-	  if (EncPulsStatus==GPIO_PIN_SET)
-	  {
-		  sprintf(ScreenString[1], "Enc.Sw. Rel.");
-	  }
-	  else
-	  {
-		  sprintf(ScreenString[1], "Enc.Sw. Push.");
-	  }
-
-	  /* Finecorsa encoder rotativo */
+	  // Finecorsa encoder rotativo
 	  if (GraphicVar.SignedEncActValue<0)
 	  {
 		  __HAL_TIM_SET_COUNTER(&htim3, 0);
@@ -754,7 +716,7 @@ void StartGraphicTask(void *argument)
 		  __HAL_TIM_SET_COUNTER(&htim3, MAXTEMPERATURE);
 	  }
 
-	  /* Aggiornamento stringa valore encoder */
+	  // Aggiornamento stringa valore encoder
 	  if (tempEncCount != GraphicVar.SignedEncActValue)
 	  {
 		  tempEncCount = GraphicVar.SignedEncActValue;
@@ -765,14 +727,7 @@ void StartGraphicTask(void *argument)
 		  sprintf(ScreenString[0], "Enc.Ticks= %d", GraphicVar.SignedEncActValue);
 	  }
 
-	  /* Aggiornamento stringa pulsante encoder */
-	  if (tempEncPuls != EncPulsStatus)
-	  {
-		  tempEncPuls = EncPulsStatus;
-		  updateVisu = 1;
-	  }
-
-	  /* Aggiornamento stringa temperatura */
+	  // Aggiornamento stringa temperatura
 	  	  if (tempActTemperature != FilteredTemperature)
 	  	  {
 	  		  tempActTemperature = FilteredTemperature;
@@ -786,30 +741,60 @@ void StartGraphicTask(void *argument)
 		  u8g2_ClearBuffer(&u8g2);
 		  tempHeigth = u8g2_GetFontBBXHeight(&u8g2);
 		  u8g2_DrawStr(&u8g2, 1, tempHeigth, ScreenString[0]);
-		  u8g2_DrawStr(&u8g2, 1, tempHeigth*2 + LINESPACE, ScreenString[1]);
 		  u8g2_DrawStr(&u8g2, 1, tempHeigth*3 + LINESPACE, ScreenString[2]);
 	  }
-
 	  u8g2_SendBuffer(&u8g2);
-
-	  /* Graph 1
-	  sprintf((uint8_t *) logBuf, "Setpoint: %.1f, Actual Temp: %.1f, Actual PWM: %d\r\n",
-			  TempPID.Setpoint, FilteredTemperature, TIM2->CCR2);
-	  CDC_Transmit_FS((uint8_t *) logBuf, strlen(logBuf));
-	   */
-
-		sprintf((uint8_t *) logBuf, "PID_P: %.1f, PID_I: %.1f, PID_D: %.1f\r\n",
-				  TempPID.PID_P, TempPID.PID_I, TempPID.PID_D);
-		CDC_Transmit_FS((uint8_t *) logBuf, strlen(logBuf));
-
-		/*
-		sprintf((uint8_t *) logBuf, "Actual Temp: %.1f, Actual PWM: %d, PID_D: %.1f\r\n",
-				  FilteredTemperature, TIM2->CCR2, TempPID.PID_D);
-		CDC_Transmit_FS((uint8_t *) logBuf, strlen(logBuf));
 	  */
-	  osDelay(25);
+	  Graphic(&GraphicVar);
+	  osDelay(20);
   }
   /* USER CODE END StartGraphicTask */
+}
+
+/* USER CODE BEGIN Header_StartPID */
+/**
+* @brief Function implementing the PIDTask thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_StartPID */
+void StartPID(void const * argument)
+{
+  /* USER CODE BEGIN StartPID */
+  /* Infinite loop */
+  for(;;)
+  {
+	  TIM2->CCR2 = PIDUpdate(&TempPID, FilteredTemperature);
+	  osDelay(1000/PID_LOOP_FREQUENCY_HZ);
+  }
+  /* USER CODE END StartPID */
+}
+
+/* ReadTempTimerCallback function */
+void ReadTempTimerCallback(void const * argument)
+{
+  /* USER CODE BEGIN ReadTempTimerCallback */
+	Max6675_Read_TempValue(&ActTemperature);
+	FilteredTemperature = LPFilterUpdate(&TempFilter, ActTemperature);
+	/*
+	// Graph 1
+	sprintf((uint8_t *) logBuf, "Setpoint: %.1f, Actual Temp: %.1f, Actual PWM: %d\r\n",
+				  TempPID.Setpoint, FilteredTemperature, TIM2->CCR2);
+	CDC_Transmit_FS((uint8_t *) logBuf, strlen(logBuf));
+	*/
+
+	// Graph 2
+	sprintf((uint8_t *) logBuf, "PID_P: %.1f, PID_I: %.1f, PID_D: %.1f\r\n",
+					  TempPID.PID_P, TempPID.PID_I, TempPID.PID_D);
+	CDC_Transmit_FS((uint8_t *) logBuf, strlen(logBuf));
+
+	/*
+	// Graph 3
+	sprintf((uint8_t *) logBuf, "Actual Temp: %.1f, Actual PWM: %d, PID_D: %.1f\r\n",
+					  FilteredTemperature, TIM2->CCR2, TempPID.PID_D);
+	CDC_Transmit_FS((uint8_t *) logBuf, strlen(logBuf));
+	 */
+  /* USER CODE END ReadTempTimerCallback */
 }
 
  /**
@@ -823,11 +808,7 @@ void StartGraphicTask(void *argument)
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
   /* USER CODE BEGIN Callback 0 */
-	if (htim->Instance == TIM4) {
-		//HAL_GPIO_TogglePin(LED_GPIO_Port, LED_Pin);
-		Max6675_Read_TempValue(&ActTemperature);
-		FilteredTemperature = LPFilterUpdate(&TempFilter, ActTemperature);
-	}
+
   /* USER CODE END Callback 0 */
   if (htim->Instance == TIM1) {
     HAL_IncTick();
