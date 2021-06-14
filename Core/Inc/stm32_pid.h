@@ -17,7 +17,7 @@
 
 #define TEMPERATURE_SAMPLE_TIME 0.25
 #define MAXTEMPERATURE 240
-#define DERIVATIVE_TIME_CONSTANT 0.02f
+#define DERIVATIVE_TIME_CONSTANT 0.1f
 
 // ------------------------- Variable ------------------------
 typedef struct {

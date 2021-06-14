@@ -173,8 +173,9 @@ int main(void)
   u8g2_SetFontPosTop(&u8g2);
 
   LPFilterInit(&TempFilter);
-  PIDInit(&TempPID, TEMPERATURE_SAMPLE_TIME, MAXPWMOUTPUT, 0, 200, 60, 100, MAXPWMOUTPUT/2, -(MAXPWMOUTPUT/2), DERIVATIVE_TIME_CONSTANT);
-  PIDNewSetpoint(&TempPID, 120);
+  PIDInit(&TempPID, TEMPERATURE_SAMPLE_TIME, MAXPWMOUTPUT, 0, 160, 100, 27, MAXPWMOUTPUT/2, -(MAXPWMOUTPUT/2), DERIVATIVE_TIME_CONSTANT);
+  PIDNewSetpoint(&TempPID, 200);
+  __HAL_TIM_SET_COUNTER(&htim3, 200);
 
   /* USER CODE END 2 */
 
@@ -724,6 +725,9 @@ void StartMainTask(void const * argument)
 		  GraphicVar._ActualHeatState = HeatOFF;
 		  TIM2->CCR2 = 0;
 	  }
+	  sprintf((uint8_t *) logBuf, "PID_P: %.1f, PID_I: %.1f, PID_D: %.1f\r\n",
+	  					  TempPID.PID_P, TempPID.PID_I, TempPID.PID_D);
+	  	CDC_Transmit_FS((uint8_t *) logBuf, strlen(logBuf));
 	  osDelay(1000/PID_LOOP_FREQUENCY_HZ);
   }
   /* USER CODE END 5 */

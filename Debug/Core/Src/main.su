@@ -1,9 +1,9 @@
-main.c:709:6:StartMainTask	8	static
-main.c:739:6:StartGraphicTask	8	static
-main.c:758:6:ReadTempTimerCallback	8	static
+main.c:710:6:StartMainTask	24	static
+main.c:743:6:StartGraphicTask	8	static
+main.c:762:6:ReadTempTimerCallback	8	static
 main.c:112:5:_write	12	static,ignoring_inline_asm
-main.c:241:6:SystemClock_Config	96	static,ignoring_inline_asm
+main.c:242:6:SystemClock_Config	96	static,ignoring_inline_asm
 main.c:126:5:main	144	static,ignoring_inline_asm
-main.c:685:6:HAL_GPIO_EXTI_Callback	0	static
-main.c:792:6:HAL_TIM_PeriodElapsedCallback	0	static
-main.c:809:6:Error_Handler	0	static,ignoring_inline_asm
+main.c:686:6:HAL_GPIO_EXTI_Callback	0	static
+main.c:796:6:HAL_TIM_PeriodElapsedCallback	0	static
+main.c:813:6:Error_Handler	0	static,ignoring_inline_asm
