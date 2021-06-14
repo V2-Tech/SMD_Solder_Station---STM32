@@ -60,6 +60,12 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
+#define PulsStart_Pin GPIO_PIN_13
+#define PulsStart_GPIO_Port GPIOC
+#define PulsStart_EXTI_IRQn EXTI15_10_IRQn
+#define PulsStop_Pin GPIO_PIN_15
+#define PulsStop_GPIO_Port GPIOC
+#define PulsStop_EXTI_IRQn EXTI15_10_IRQn
 #define HEATER_PWM_Pin GPIO_PIN_1
 #define HEATER_PWM_GPIO_Port GPIOA
 #define MAX6675_NSS_Pin GPIO_PIN_4
@@ -70,8 +76,9 @@ void Error_Handler(void);
 #define ENC_DT_GPIO_Port GPIOB
 #define ENC_CLK_Pin GPIO_PIN_5
 #define ENC_CLK_GPIO_Port GPIOB
-#define ENC_PULS_Pin GPIO_PIN_7
-#define ENC_PULS_GPIO_Port GPIOB
+#define PulsEncoder_Pin GPIO_PIN_7
+#define PulsEncoder_GPIO_Port GPIOB
+#define PulsEncoder_EXTI_IRQn EXTI9_5_IRQn
 /* USER CODE BEGIN Private defines */
 extern _Bool BlinkVar;
 extern _Bool AlarmVar;

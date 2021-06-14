@@ -4,6 +4,8 @@
  */
 #include "main.h"
 #include "stm32f1xx_hal.h"
+#include "stdio.h"
+#include "stdbool.h"
 
 /* Define to prevent recursive inclusion -------------------------------------*/
 #ifndef __STM32PID_H
@@ -19,9 +21,13 @@
 
 // ------------------------- Variable ------------------------
 typedef struct {
+	//Public
 	float buffer[FILTER_LENGTH];
-	uint8_t bufferIndex;
 	float FilteredValue;
+	_Bool FilterOK;
+
+	//Private:
+	uint8_t bufferIndex;
 } LPFilter;
 
 typedef struct {

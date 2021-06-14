@@ -19,8 +19,9 @@ void LPFilterInit(LPFilter *filter)
 	/* Reset index */
 	filter->bufferIndex = 0;
 
-	/* Reset Output value */
+	/* Reset Output values */
 	filter->FilteredValue = 0;
+	filter->FilterOK = false;
 }
 
 float LPFilterUpdate(LPFilter *filter, float InValue)
@@ -34,6 +35,7 @@ float LPFilterUpdate(LPFilter *filter, float InValue)
 	if (filter->bufferIndex>=FILTER_LENGTH)
 	{
 		filter->bufferIndex = 0;
+		filter->FilterOK = true;
 	}
 
 	/* Compute output */

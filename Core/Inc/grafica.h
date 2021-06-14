@@ -52,6 +52,8 @@ typedef struct
 	OledPage _ActualPage;
 	int8_t _ActualHeatMode;//0=Manual, 1=Automatic
 	HeatState _ActualHeatState;//0=OFF, 1=Heating, 2=Steady-State
+	_Bool _PulsEncoderPressed;
+	_Bool _TargetChanging;
 } VisualInterface;
 
 // ------------------------- Functions  ----------------------
@@ -59,9 +61,9 @@ void TestFPS();
 
 void EncoderRead(VisualInterface* Interface, TIM_HandleTypeDef* EncoderTimer);
 
-void Graphic(VisualInterface* Interface, LPFilter *filter);
+void Graphic(VisualInterface* Interface, LPFilter *filter, PID *pid);
 void GraphicInit(VisualInterface* Interface);
-void MainPage(VisualInterface* Interface, LPFilter *filter);
+void MainPage(VisualInterface* Interface, LPFilter *filter, PID *pid);
 
 void BlinkTimerCallback(void const * argument);
 

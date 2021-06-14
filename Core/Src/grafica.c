@@ -51,8 +51,26 @@ void TestFPS() {
 
 void EncoderRead(VisualInterface* Interface, TIM_HandleTypeDef* EncoderTimerHandler)
 {
+	static uint32_t EncLastValue;
+
+	// Encoder counts reading
 	uint32_t EncActValue = EncoderTimerHandler->Instance->CNT;
 	Interface->SignedEncActValue = (int16_t) EncActValue;
+	if (EncActValue != EncLastValue)
+	{
+		EncLastValue = EncActValue;
+
+	}
+
+	// Software counts limit
+	if (Interface->SignedEncActValue<0)
+	{
+		  __HAL_TIM_SET_COUNTER(EncoderTimerHandler, 0);
+	}
+	if (Interface->SignedEncActValue>MAXTEMPERATURE)
+	{
+		  __HAL_TIM_SET_COUNTER(EncoderTimerHandler, MAXTEMPERATURE);
+	}
 }
 
 void BlinkTimerCallback(void const * argument)
@@ -60,13 +78,13 @@ void BlinkTimerCallback(void const * argument)
 	BlinkVar = !BlinkVar;
 }
 
-void Graphic(VisualInterface* Interface, LPFilter *filter)
+void Graphic(VisualInterface* Interface, LPFilter *filter, PID *pid)
 {
 	u8g2_ClearBuffer(&u8g2);
 	switch(Interface->_ActualPage)
 	{
 		case PageMain:
-			MainPage(Interface, filter);
+			MainPage(Interface, filter, pid);
 			break;
 		case PageOptions:
 			break;
@@ -74,7 +92,7 @@ void Graphic(VisualInterface* Interface, LPFilter *filter)
 	u8g2_SendBuffer(&u8g2);
 }
 
-void MainPage(VisualInterface* Interface, LPFilter *filter)
+void MainPage(VisualInterface* Interface, LPFilter *filter, PID *pid)
 {
 	char ScreenString[2][8];
 
@@ -96,7 +114,7 @@ void MainPage(VisualInterface* Interface, LPFilter *filter)
 
 	// Draw heat icon
 	if ((Interface->_ActualHeatState == HeatStatyState) ||
-			((Interface->_ActualHeatState == Heating || 1) && (BlinkVar == 1)))
+			((Interface->_ActualHeatState == Heating) && (BlinkVar == 1)))
 	{
 		u8g2_DrawXBMP(&u8g2, 96, 26, 30, 28, Heater_30x28);
 	}
@@ -106,11 +124,47 @@ void MainPage(VisualInterface* Interface, LPFilter *filter)
 	//*********************************
 
 	// Actual temperature value
-	u8g2_SetFont(&u8g2, u8g2_font_helvR18_tf);
-	sprintf((uint8_t *)ScreenString[0], "%3.0f C",filter->FilteredValue);
-	u8g2_DrawStr(&u8g2, 32, 24, ScreenString[0]);
+	u8g2_SetFont(&u8g2, u8g2_font_helvR14_tf);
+	if (filter->FilterOK && !AlarmVar)
+	{
+		sprintf((uint8_t *)ScreenString[0], "%3.0f C",filter->FilteredValue);
+		u8g2_DrawStr(&u8g2, 32, 24, ScreenString[0]);
+	}
+	else if (AlarmVar)
+	{
+		sprintf((uint8_t *)ScreenString[0], "???.? C");
+		u8g2_DrawStr(&u8g2, 32, 24, ScreenString[0]);
+	}
+	else
+	{
+		sprintf((uint8_t *)ScreenString[0], "Calc...");
+		u8g2_DrawStr(&u8g2, 32, 24, ScreenString[0]);
+	}
 
 	// Setpoint value
+	u8g2_SetFont(&u8g2, u8g2_font_helvR10_tf);
+	if (Interface->SignedEncActValue <= MAXTEMPERATURE && Interface->SignedEncActValue >= 0)
+	{
+		if (Interface->SignedEncActValue == pid->Setpoint)
+		{
+			sprintf(ScreenString[0], "%3.0f C", pid->Setpoint);
+			u8g2_DrawStr(&u8g2, 26, 0, ScreenString[0]);
+		}
+		else
+		{
+			if (BlinkVar == 1)
+			{
+				sprintf(ScreenString[0], "%d C", Interface->SignedEncActValue);
+				u8g2_DrawStr(&u8g2, 26, 0, ScreenString[0]);
+			}
+		}
+	}
+	if (Interface->_PulsEncoderPressed)
+	{
+		Interface->_PulsEncoderPressed = false;
+		PIDNewSetpoint(pid, Interface->SignedEncActValue);
+		Interface->_TargetChanging = false;
+	}
 
 	Interface->_ActualPage = PageMain;
 }
