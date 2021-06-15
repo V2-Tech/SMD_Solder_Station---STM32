@@ -1,4 +1,5 @@
 grafica.c:52:6:EncoderRead	8	static
 grafica.c:76:6:BlinkTimerCallback	0	static
-grafica.c:95:6:MainPage	48	static
-grafica.c:81:6:Graphic	16	static
+grafica.c:98:6:MainPage	48	static
+grafica.c:173:6:TuningPage	40	static
+grafica.c:81:6:Graphic	24	static

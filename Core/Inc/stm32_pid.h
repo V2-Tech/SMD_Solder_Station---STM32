@@ -109,5 +109,6 @@ void PID_AutoTuneInit(PID_AutoTune *PID_AutoTuneStruct, double Setpoint, double 
 int8_t PID_AutoTuneUpdate(PID_AutoTune *PID_AutoTuneStruct, float *Input, uint32_t *Output);
 void PID_AutoTuneCompute(PID_AutoTune *PID_AutoTuneStruct);
 void PID_AutoTuneGetCoeff(PID_AutoTune *PID_AutoTuneStruct, PID *PID);
+void PID_AutoTuneStop(PID_AutoTune *PID_AutoTuneStruct);
 
 #endif

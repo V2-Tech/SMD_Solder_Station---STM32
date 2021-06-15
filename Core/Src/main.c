@@ -187,9 +187,9 @@ int main(void)
   //***** PID INITIALIZATION ********
   //*********************************
   LPFilterInit(&TempFilter);
-  PIDInit(&TempPID, TEMPERATURE_SAMPLE_TIME, MAXPWMOUTPUT, 0, 160, 100, 27, MAXPWMOUTPUT/2, -(MAXPWMOUTPUT/2), DERIVATIVE_TIME_CONSTANT);
+  PIDInit(&TempPID, TEMPERATURE_SAMPLE_TIME, MAXPWMOUTPUT, 0, 180, 8, 956, MAXPWMOUTPUT/2, -(MAXPWMOUTPUT/2), DERIVATIVE_TIME_CONSTANT);
   PIDNewSetpoint(&TempPID, STARTTEMPERATURE);
-  PID_AutoTuneInit(&TempAutoTuneVar, STARTTEMPERATURE, 0.5, TEMPERATURE_SAMPLE_TIME, 20, 128, 100);
+  PID_AutoTuneInit(&TempAutoTuneVar, STARTTEMPERATURE, 0.5, TEMPERATURE_SAMPLE_TIME, 20, 0, 1024);
 
   /* USER CODE END 2 */
 
@@ -726,13 +726,13 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 		}
 	}
 
-	if(GPIO_Pin == PulsEncoder_Pin && HAL_GPIO_ReadPin(PulsEncoder_GPIO_Port, PulsEncoder_Pin) == GPIO_PIN_SET)
+	if(GPIO_Pin == PulsEncoder_Pin && HAL_GPIO_ReadPin(PulsEncoder_GPIO_Port, PulsEncoder_Pin) == GPIO_PIN_RESET)
 	{
 		GraphicVar._PulsEncoderPressed = true;
 		GraphicVar._PulsEncoderReleased = false;
 		osTimerStart(PulsEncoderTimerHandle, PULS_HOLDED_TIME_MS/portTICK_PERIOD_MS);
 	}
-	if(GPIO_Pin == PulsEncoder_Pin && HAL_GPIO_ReadPin(PulsEncoder_GPIO_Port, PulsEncoder_Pin) == GPIO_PIN_RESET)
+	if(GPIO_Pin == PulsEncoder_Pin && HAL_GPIO_ReadPin(PulsEncoder_GPIO_Port, PulsEncoder_Pin) == GPIO_PIN_SET)
 	{
 		osTimerStop(PulsEncoderTimerHandle);
 		GraphicVar._PulsEncoderPressed = false;
@@ -777,7 +777,22 @@ void StartMainTask(void const * argument)
 	  }
 	  else if (GraphicVar._ActualPage == PageTuning)
 	  {
-
+		  if (StartTuning)
+		  {
+			  int8_t TuningStatus = PID_AutoTuneUpdate(&TempAutoTuneVar, &FilteredTemperature, &TIM2->CCR2);
+			  if (TuningStatus == 1)
+			  {
+				  PID_AutoTuneCompute(&TempAutoTuneVar);
+				  PID_AutoTuneGetCoeff(&TempAutoTuneVar, &TempPID);
+				  PIDNewCoeff(&TempPID, TempAutoTuneVar.Kp_Tuned, TempAutoTuneVar.Ki_Tuned, TempAutoTuneVar.Kp_Tuned);
+				  StartTuning = false;
+			  }
+		  }
+		  else
+		  {
+			  PID_AutoTuneStop(&TempAutoTuneVar);
+			  TIM2->CCR2 = 0;
+		  }
 		  osDelay(1);
 	  }
   }
@@ -802,7 +817,7 @@ void StartGraphicTask(void const * argument)
 	  printf("Signed encoder actual value: %d\r", GraphicVar.SignedEncActValue);
 
 	  // Aggiornamento OLED
-	  Graphic(&GraphicVar, &TempFilter, &TempPID);
+	  Graphic(&GraphicVar, &TempFilter, &TempPID, &TempAutoTuneVar);
 
 	  osDelay(20);
   }
@@ -840,14 +855,15 @@ void ReadTempTimerCallback(void const * argument)
 void PulsEncoderTimerCallback(void const * argument)
 {
   /* USER CODE BEGIN PulsEncoderTimerCallback */
-	if (GraphicVar._ActualPage = PageMain)
+	if (GraphicVar._ActualPage == PageMain)
 	{
 		GraphicVar._ActualPage = PageTuning;
 	}
-	else if (GraphicVar._ActualPage = PageTuning)
+	else if (GraphicVar._ActualPage == PageTuning)
 	{
 		GraphicVar._ActualPage = PageMain;
 	}
+
 	GraphicVar._PulsEncoderHolded = true;
   /* USER CODE END PulsEncoderTimerCallback */
 }

@@ -157,7 +157,7 @@ void PID_AutoTuneInit(PID_AutoTune *PID_AutoTuneStruct, double Setpoint, double 
 	PID_AutoTuneStruct->setpoint = Setpoint;
 	PID_AutoTuneStruct->noiseBand = NyquistSensorResolution;
 	PID_AutoTuneStruct->sampleTime = SampleTime * 1000;
-	PID_AutoTuneStruct->nLookBack = TunningDeep;
+	PID_AutoTuneStruct->nLookBack = TunningDeep * 4;
 	PID_AutoTuneStruct->outputStart = OutputStartVal;
 	PID_AutoTuneStruct->oStep = OutputStepVal;
 }
@@ -313,4 +313,9 @@ void PID_AutoTuneGetCoeff(PID_AutoTune *PID_AutoTuneStruct, PID *PID)
 		PID_AutoTuneStruct->Ki_Tuned = 0.48 * PID_AutoTuneStruct->Ku / PID_AutoTuneStruct->Pu;
 		PID_AutoTuneStruct->Kd_Tuned = 0;
 	}
+}
+
+void PID_AutoTuneStop(PID_AutoTune *PID_AutoTuneStruct)
+{
+	PID_AutoTuneStruct->running = false;
 }

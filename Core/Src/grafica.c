@@ -87,7 +87,7 @@ void Graphic(VisualInterface* Interface, LPFilter *filter, PID *pid, PID_AutoTun
 			MainPage(Interface, filter, pid);
 			break;
 		case PageTuning:
-			TuningPage(Interface, pid, pid_autotune);
+			TuningPage(Interface, filter, pid, pid_autotune);
 			break;
 		case PageOptions:
 			break;
@@ -168,13 +168,11 @@ void MainPage(VisualInterface* Interface, LPFilter *filter, PID *pid)
 		PIDNewSetpoint(pid, Interface->SignedEncActValue);
 		Interface->_TargetChanging = false;
 	}
-
-	Interface->_ActualPage = PageMain;
 }
 
-void TuningPage(VisualInterface* Interface, PID *pid, PID_AutoTune *pid_autotune)
+void TuningPage(VisualInterface* Interface, LPFilter *filter, PID *pid, PID_AutoTune *pid_autotune)
 {
-	char ScreenString[128];
+	char ScreenString[3][8];
 	//*********************************
 	//************* ICONS *************
 	//*********************************
@@ -182,16 +180,24 @@ void TuningPage(VisualInterface* Interface, PID *pid, PID_AutoTune *pid_autotune
 	//*********************************
 	//************ VALUES *************
 	//*********************************
-	u8g2_SetFont(&u8g2, u8g2_font_helvR14_tf);
+	u8g2_SetFont(&u8g2, u8g2_font_helvR10_tf);
 
 	if (pid_autotune->running)
 	{
-		sprintf(ScreenString, "TUNE IS\rRUNNING...");
-		u8g2_DrawStr(&u8g2, 30, 50, ScreenString);
+		sprintf(ScreenString[0], "TUNE IS");
+		u8g2_DrawStr(&u8g2, 10, 15, ScreenString[0]);
+		sprintf(ScreenString[1], "RUNNING...");
+		u8g2_DrawStr(&u8g2, 10, 15 + u8g2_GetFontBBXHeight(&u8g2) + LINESPACE, ScreenString[1]);
+		sprintf(ScreenString[2], "%3.0f C",filter->FilteredValue);
+		u8g2_DrawStr(&u8g2, 15, 15 + 2*(u8g2_GetFontBBXHeight(&u8g2) + LINESPACE), ScreenString[2]);
 	}
 	else
 	{
-		sprintf(ScreenString, "Kp: %d\rKi: %d\rKd: %d", pid_autotune->Kp_Tuned, pid_autotune->Ki_Tuned, pid_autotune->Kd_Tuned);
-		u8g2_DrawStr(&u8g2, 30, 20, ScreenString);
+		sprintf(ScreenString[0], "Kp: %d", pid_autotune->Kp_Tuned);
+		u8g2_DrawStr(&u8g2, 10, 15, ScreenString[0]);
+		sprintf(ScreenString[1], "Ki: %d", pid_autotune->Ki_Tuned);
+		u8g2_DrawStr(&u8g2, 10 + u8g2_GetExactStrWidth(&u8g2, ScreenString[0]) + 5, 15, ScreenString[1]);
+		sprintf(ScreenString[2], "Kd: %d", pid_autotune->Kd_Tuned);
+		u8g2_DrawStr(&u8g2, 10, 15 + u8g2_GetFontBBXHeight(&u8g2) + LINESPACE, ScreenString[2]);
 	}
 }

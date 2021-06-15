@@ -8,3 +8,4 @@ stm32_pid.c:154:6:PID_AutoTuneInit	8	static
 stm32_pid.c:296:6:PID_AutoTuneCompute	16	static
 stm32_pid.c:165:8:PID_AutoTuneUpdate	56	static
 stm32_pid.c:302:6:PID_AutoTuneGetCoeff	24	static
+stm32_pid.c:318:6:PID_AutoTuneStop	0	static

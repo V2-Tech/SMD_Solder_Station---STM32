@@ -20,7 +20,7 @@
 #define __GRAFICA_H
 
 // ------------------------- Defines -------------------------
-#define LINESPACE 2
+#define LINESPACE 1
 
 #define BLINK_DELAY_MS 250
 
@@ -69,7 +69,7 @@ void EncoderRead(VisualInterface* Interface, TIM_HandleTypeDef* EncoderTimer);
 void Graphic(VisualInterface* Interface, LPFilter *filter, PID *pid, PID_AutoTune *pid_autotune);
 void GraphicInit(VisualInterface* Interface);
 void MainPage(VisualInterface* Interface, LPFilter *filter, PID *pid);
-void TuningPage(VisualInterface* Interface, PID *pid, PID_AutoTune *pid_autotune);
+void TuningPage(VisualInterface* Interface, LPFilter *filter, PID *pid, PID_AutoTune *pid_autotune);
 
 void BlinkTimerCallback(void const * argument);
 
