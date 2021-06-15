@@ -72,6 +72,7 @@ osThreadId MainTaskHandle;
 osThreadId GraphicTaskHandle;
 osTimerId ReadTempTimerHandle;
 osTimerId BlinkTimerHandle;
+osTimerId PulsEncoderTimerHandle;
 /* USER CODE BEGIN PV */
 uint8_t updateVisu;
 int32_t tempEncCount = -1;
@@ -81,9 +82,10 @@ LPFilter TempFilter;
 float FilteredTemperature;
 PID TempPID;
 VisualInterface GraphicVar;
+PID_AutoTune TempAutoTuneVar;
 char logBuf[128];
 _Bool EnablePWMOut;
-
+_Bool StartTuning;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -102,6 +104,7 @@ void StartMainTask(void const * argument);
 void StartGraphicTask(void const * argument);
 void ReadTempTimerCallback(void const * argument);
 extern void BlinkTimerCallback(void const * argument);
+void PulsEncoderTimerCallback(void const * argument);
 
 /* USER CODE BEGIN PFP */
 
@@ -157,11 +160,19 @@ int main(void)
   MX_SPI2_Init();
   MX_TIM4_Init();
   /* USER CODE BEGIN 2 */
+
+  //*********************************
+  //******** TIMER STARTING *********
+  //*********************************
   HAL_TIM_Base_Start(&htim2);
   HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_2);
   HAL_TIM_Encoder_Start(&htim3, TIM_CHANNEL_ALL);
   HAL_TIM_Base_Start_IT(&htim4);
+  __HAL_TIM_SET_COUNTER(&htim3, STARTTEMPERATURE);
 
+  //*********************************
+  //**** DISPLAY INITIALIZATION *****
+  //*********************************
   u8g2_Setup_ssd1306_i2c_128x64_noname_f(&u8g2,
  	  U8G2_R0,
  	  u8x8_byte_stm32_hw_i2c,
@@ -172,10 +183,13 @@ int main(void)
   u8g2_SetFont(&u8g2, u8g2_font_helvR14_tf);
   u8g2_SetFontPosTop(&u8g2);
 
+  //*********************************
+  //***** PID INITIALIZATION ********
+  //*********************************
   LPFilterInit(&TempFilter);
   PIDInit(&TempPID, TEMPERATURE_SAMPLE_TIME, MAXPWMOUTPUT, 0, 160, 100, 27, MAXPWMOUTPUT/2, -(MAXPWMOUTPUT/2), DERIVATIVE_TIME_CONSTANT);
-  PIDNewSetpoint(&TempPID, 200);
-  __HAL_TIM_SET_COUNTER(&htim3, 200);
+  PIDNewSetpoint(&TempPID, STARTTEMPERATURE);
+  PID_AutoTuneInit(&TempAutoTuneVar, STARTTEMPERATURE, 0.5, TEMPERATURE_SAMPLE_TIME, 20, 128, 100);
 
   /* USER CODE END 2 */
 
@@ -195,6 +209,10 @@ int main(void)
   /* definition and creation of BlinkTimer */
   osTimerDef(BlinkTimer, BlinkTimerCallback);
   BlinkTimerHandle = osTimerCreate(osTimer(BlinkTimer), osTimerPeriodic, NULL);
+
+  /* definition and creation of PulsEncoderTimer */
+  osTimerDef(PulsEncoderTimer, PulsEncoderTimerCallback);
+  PulsEncoderTimerHandle = osTimerCreate(osTimer(PulsEncoderTimer), osTimerOnce, NULL);
 
   /* USER CODE BEGIN RTOS_TIMERS */
   /* start timers, add new ones, ... */
@@ -669,7 +687,7 @@ static void MX_GPIO_Init(void)
 
   /*Configure GPIO pin : PulsEncoder_Pin */
   GPIO_InitStruct.Pin = PulsEncoder_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING_FALLING;
   GPIO_InitStruct.Pull = GPIO_PULLUP;
   HAL_GPIO_Init(PulsEncoder_GPIO_Port, &GPIO_InitStruct);
 
@@ -687,15 +705,39 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
 	if(GPIO_Pin == PulsStart_Pin)
 	{
-		EnablePWMOut = true;
+		if (GraphicVar._ActualPage == PageMain)
+		{
+			EnablePWMOut = true;
+		}
+		else if (GraphicVar._ActualPage == PageTuning)
+		{
+			StartTuning = true;
+		}
 	}
 	else if (GPIO_Pin == PulsStop_Pin)
 	{
-		EnablePWMOut = false;
+		if (GraphicVar._ActualPage == PageMain)
+		{
+			EnablePWMOut = false;
+		}
+		else if (GraphicVar._ActualPage == PageTuning)
+		{
+			StartTuning = false;
+		}
 	}
-	if(GPIO_Pin == PulsEncoder_Pin)
+
+	if(GPIO_Pin == PulsEncoder_Pin && HAL_GPIO_ReadPin(PulsEncoder_GPIO_Port, PulsEncoder_Pin) == GPIO_PIN_SET)
 	{
 		GraphicVar._PulsEncoderPressed = true;
+		GraphicVar._PulsEncoderReleased = false;
+		osTimerStart(PulsEncoderTimerHandle, PULS_HOLDED_TIME_MS/portTICK_PERIOD_MS);
+	}
+	if(GPIO_Pin == PulsEncoder_Pin && HAL_GPIO_ReadPin(PulsEncoder_GPIO_Port, PulsEncoder_Pin) == GPIO_PIN_RESET)
+	{
+		osTimerStop(PulsEncoderTimerHandle);
+		GraphicVar._PulsEncoderPressed = false;
+		GraphicVar._PulsEncoderReleased = true;
+		GraphicVar._PulsEncoderHolded = false;
 	}
 }
 /* USER CODE END 4 */
@@ -715,20 +757,29 @@ void StartMainTask(void const * argument)
   /* Infinite loop */
   for(;;)
   {
-	  if (EnablePWMOut && TempFilter.FilterOK)
+	  if (GraphicVar._ActualPage == PageMain)
 	  {
-		  GraphicVar._ActualHeatState = Heating;
-		  TIM2->CCR2 = PIDUpdate(&TempPID, FilteredTemperature);
+		  if (EnablePWMOut && TempFilter.FilterOK)
+		  {
+		  	  GraphicVar._ActualHeatState = Heating;
+		  	  TIM2->CCR2 = PIDUpdate(&TempPID, FilteredTemperature);
+		  }
+		  else
+		  {
+		  	  GraphicVar._ActualHeatState = HeatOFF;
+		  	  TIM2->CCR2 = 0;
+		  }
+		   sprintf((uint8_t *) logBuf, "PID_P: %.1f, PID_I: %.1f, PID_D: %.1f\r\n",
+		   					  TempPID.PID_P, TempPID.PID_I, TempPID.PID_D);
+		  CDC_Transmit_FS((uint8_t *) logBuf, strlen(logBuf));
+
+		  osDelay(1000/PID_LOOP_FREQUENCY_HZ);
 	  }
-	  else
+	  else if (GraphicVar._ActualPage == PageTuning)
 	  {
-		  GraphicVar._ActualHeatState = HeatOFF;
-		  TIM2->CCR2 = 0;
+
+		  osDelay(1);
 	  }
-	  sprintf((uint8_t *) logBuf, "PID_P: %.1f, PID_I: %.1f, PID_D: %.1f\r\n",
-	  					  TempPID.PID_P, TempPID.PID_I, TempPID.PID_D);
-	  	CDC_Transmit_FS((uint8_t *) logBuf, strlen(logBuf));
-	  osDelay(1000/PID_LOOP_FREQUENCY_HZ);
   }
   /* USER CODE END 5 */
 }
@@ -783,6 +834,22 @@ void ReadTempTimerCallback(void const * argument)
 	CDC_Transmit_FS((uint8_t *) logBuf, strlen(logBuf));
 	 */
   /* USER CODE END ReadTempTimerCallback */
+}
+
+/* PulsEncoderTimerCallback function */
+void PulsEncoderTimerCallback(void const * argument)
+{
+  /* USER CODE BEGIN PulsEncoderTimerCallback */
+	if (GraphicVar._ActualPage = PageMain)
+	{
+		GraphicVar._ActualPage = PageTuning;
+	}
+	else if (GraphicVar._ActualPage = PageTuning)
+	{
+		GraphicVar._ActualPage = PageMain;
+	}
+	GraphicVar._PulsEncoderHolded = true;
+  /* USER CODE END PulsEncoderTimerCallback */
 }
 
  /**

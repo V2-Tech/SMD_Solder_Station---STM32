@@ -150,3 +150,167 @@ uint32_t PIDUpdate(PID *PID, float ActValue)
 	/* Return the actual PID output value */
 	return (uint32_t)PID->OutputVal;
 }
+
+void PID_AutoTuneInit(PID_AutoTune *PID_AutoTuneStruct, double Setpoint, double NyquistSensorResolution,
+						float SampleTime/*Second*/, int16_t TunningDeep, double OutputStartVal, double OutputStepVal)
+{
+	PID_AutoTuneStruct->setpoint = Setpoint;
+	PID_AutoTuneStruct->noiseBand = NyquistSensorResolution;
+	PID_AutoTuneStruct->sampleTime = SampleTime * 1000;
+	PID_AutoTuneStruct->nLookBack = TunningDeep;
+	PID_AutoTuneStruct->outputStart = OutputStartVal;
+	PID_AutoTuneStruct->oStep = OutputStepVal;
+}
+
+int8_t PID_AutoTuneUpdate(PID_AutoTune *PID_AutoTuneStruct, float *Input, uint32_t *Output)
+{
+	PID_AutoTuneStruct->justevaled = false;
+	if(PID_AutoTuneStruct->peakCount>9 && PID_AutoTuneStruct->running)
+	{
+		PID_AutoTuneStruct->running = false;
+		*Output = PID_AutoTuneStruct->outputStart;
+		PID_AutoTuneCompute(PID_AutoTuneStruct);
+		return 1;
+	}
+
+	uint32_t now = xTaskGetTickCount();
+	if((now - PID_AutoTuneStruct->lastTime) < PID_AutoTuneStruct->sampleTime)
+	{
+		return false;
+	}
+	PID_AutoTuneStruct->lastTime = now;
+
+	double refVal = *Input;
+	PID_AutoTuneStruct->justevaled = true;
+
+	if(!PID_AutoTuneStruct->running)
+	{ //initialize working variables the first time around
+		PID_AutoTuneStruct->peakType = 0;
+		PID_AutoTuneStruct->peakCount = 0;
+		PID_AutoTuneStruct->justchanged = false;
+		PID_AutoTuneStruct->absMax = refVal;
+		PID_AutoTuneStruct->absMin = refVal;
+		PID_AutoTuneStruct->setpoint = refVal;
+		PID_AutoTuneStruct->running = true;
+		PID_AutoTuneStruct->outputStart = *Output;
+		*Output = PID_AutoTuneStruct->outputStart + PID_AutoTuneStruct->oStep;
+	}
+	else
+	{
+		if(refVal>PID_AutoTuneStruct->absMax)
+		{
+			PID_AutoTuneStruct->absMax = refVal;
+		}
+		if(refVal<PID_AutoTuneStruct->absMin)
+		{
+			PID_AutoTuneStruct->absMin = refVal;
+		}
+	}
+
+	//oscillate the output base on the input's relation to the setpoint
+
+	if(refVal>PID_AutoTuneStruct->setpoint + PID_AutoTuneStruct->noiseBand)
+	{
+		*Output = PID_AutoTuneStruct->outputStart - PID_AutoTuneStruct->oStep;
+	}
+	else if (refVal<PID_AutoTuneStruct->setpoint - PID_AutoTuneStruct->noiseBand)
+	{
+		*Output = PID_AutoTuneStruct->outputStart + PID_AutoTuneStruct->oStep;
+	}
+
+	PID_AutoTuneStruct->isMax = true;
+	PID_AutoTuneStruct->isMin = true;
+
+	for(int i=PID_AutoTuneStruct->nLookBack-1; i>=0 ;i--)
+	{
+		double val = PID_AutoTuneStruct->lastInputs[i];
+		if(PID_AutoTuneStruct->isMax)
+		{
+			PID_AutoTuneStruct->isMax = refVal>val;
+		}
+		if(PID_AutoTuneStruct->isMin)
+		{
+			PID_AutoTuneStruct->isMin = refVal<val;
+		}
+		PID_AutoTuneStruct->lastInputs[i+1] = PID_AutoTuneStruct->lastInputs[i];
+	}
+	PID_AutoTuneStruct->lastInputs[0] = refVal;
+	if (PID_AutoTuneStruct->nLookBack<9)
+	{
+		return 0;
+	}
+
+	if(PID_AutoTuneStruct->isMax)
+	{
+		if(PID_AutoTuneStruct->peakType==0)
+		{
+			PID_AutoTuneStruct->peakType = 1;
+		}
+	    if(PID_AutoTuneStruct->peakType==-1)
+	    {
+	    	PID_AutoTuneStruct->peakType = 1;
+	    	PID_AutoTuneStruct->justchanged = true;
+	    	PID_AutoTuneStruct->peak2 = PID_AutoTuneStruct->peak1;
+	    }
+	    PID_AutoTuneStruct->peak1 = now;
+	    PID_AutoTuneStruct->peaks[PID_AutoTuneStruct->peakCount] = refVal;
+
+	  }
+	  else if(PID_AutoTuneStruct->isMin)
+	  {
+	    if(PID_AutoTuneStruct->peakType==0)
+	    {
+	    	PID_AutoTuneStruct->peakType = -1;
+	    }
+	    if(PID_AutoTuneStruct->peakType==1)
+	    {
+	    	PID_AutoTuneStruct->peakType = -1;
+	    	PID_AutoTuneStruct->peakCount++;
+	    	PID_AutoTuneStruct->justchanged = true;
+	    }
+
+	    if(PID_AutoTuneStruct->peakCount<10)
+	    {
+	    	PID_AutoTuneStruct->peaks[PID_AutoTuneStruct->peakCount] = refVal;
+	    }
+	  }
+
+	  if(PID_AutoTuneStruct->justchanged && PID_AutoTuneStruct->peakCount>2)
+	  { //we've transitioned.  check if we can autotune based on the last peaks
+	    double avgSeparation = (abs(PID_AutoTuneStruct->peaks[PID_AutoTuneStruct->peakCount-1] -
+	    		PID_AutoTuneStruct->peaks[PID_AutoTuneStruct->peakCount-2]) +
+	    		abs(PID_AutoTuneStruct->peaks[PID_AutoTuneStruct->peakCount-2] -
+	    				PID_AutoTuneStruct->peaks[PID_AutoTuneStruct->peakCount-3]))/2;
+	    if (avgSeparation < 0.05*(PID_AutoTuneStruct->absMax - PID_AutoTuneStruct->absMin))
+	    {
+	    	*Output = PID_AutoTuneStruct->outputStart;
+	    	PID_AutoTuneCompute(PID_AutoTuneStruct);
+			PID_AutoTuneStruct->running = false;
+			return 1;
+	    }
+	  }
+	  PID_AutoTuneStruct->justchanged = false;
+	  return 0;
+}
+
+void PID_AutoTuneCompute(PID_AutoTune *PID_AutoTuneStruct)
+{
+	PID_AutoTuneStruct->Ku = 4 * (2 * PID_AutoTuneStruct->oStep)/((PID_AutoTuneStruct->absMax - PID_AutoTuneStruct->absMin)*3.14159);
+	PID_AutoTuneStruct->Pu = (double)(PID_AutoTuneStruct->peak1 - PID_AutoTuneStruct->peak2) / 1000;
+}
+
+void PID_AutoTuneGetCoeff(PID_AutoTune *PID_AutoTuneStruct, PID *PID)
+{
+	if (PID->Kd != 0)
+	{
+		PID_AutoTuneStruct->Kp_Tuned = 0.6 * PID_AutoTuneStruct->Ku;
+		PID_AutoTuneStruct->Ki_Tuned = 1.2 * PID_AutoTuneStruct->Ku / PID_AutoTuneStruct->Pu;
+		PID_AutoTuneStruct->Kd_Tuned = 0.075 * PID_AutoTuneStruct->Ku * PID_AutoTuneStruct->Pu;
+	}
+	else
+	{
+		PID_AutoTuneStruct->Kp_Tuned = 0.4 * PID_AutoTuneStruct->Ku;
+		PID_AutoTuneStruct->Ki_Tuned = 0.48 * PID_AutoTuneStruct->Ku / PID_AutoTuneStruct->Pu;
+		PID_AutoTuneStruct->Kd_Tuned = 0;
+	}
+}

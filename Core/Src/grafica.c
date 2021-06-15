@@ -78,13 +78,16 @@ void BlinkTimerCallback(void const * argument)
 	BlinkVar = !BlinkVar;
 }
 
-void Graphic(VisualInterface* Interface, LPFilter *filter, PID *pid)
+void Graphic(VisualInterface* Interface, LPFilter *filter, PID *pid, PID_AutoTune *pid_autotune)
 {
 	u8g2_ClearBuffer(&u8g2);
 	switch(Interface->_ActualPage)
 	{
 		case PageMain:
 			MainPage(Interface, filter, pid);
+			break;
+		case PageTuning:
+			TuningPage(Interface, pid, pid_autotune);
 			break;
 		case PageOptions:
 			break;
@@ -167,4 +170,28 @@ void MainPage(VisualInterface* Interface, LPFilter *filter, PID *pid)
 	}
 
 	Interface->_ActualPage = PageMain;
+}
+
+void TuningPage(VisualInterface* Interface, PID *pid, PID_AutoTune *pid_autotune)
+{
+	char ScreenString[128];
+	//*********************************
+	//************* ICONS *************
+	//*********************************
+
+	//*********************************
+	//************ VALUES *************
+	//*********************************
+	u8g2_SetFont(&u8g2, u8g2_font_helvR14_tf);
+
+	if (pid_autotune->running)
+	{
+		sprintf(ScreenString, "TUNE IS\rRUNNING...");
+		u8g2_DrawStr(&u8g2, 30, 50, ScreenString);
+	}
+	else
+	{
+		sprintf(ScreenString, "Kp: %d\rKi: %d\rKd: %d", pid_autotune->Kp_Tuned, pid_autotune->Ki_Tuned, pid_autotune->Kd_Tuned);
+		u8g2_DrawStr(&u8g2, 30, 20, ScreenString);
+	}
 }
